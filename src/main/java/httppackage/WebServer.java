@@ -1,15 +1,18 @@
 package httppackage;
+import jdk.jfr.ContentType;
+
 import java.io.*;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.util.StringTokenizer;
 
 public class WebServer implements Runnable{
     private ServerSocket serverSocket;
     public final static int PORT = 8890;
 
-    public WebServer(){
+    public WebServer(int port){
         try{
-            serverSocket = new ServerSocket(PORT);
+            serverSocket = new ServerSocket(port);
         }
         catch(Exception e){
             System.out.println("Unable to initialize HTTP server: " + e.getLocalizedMessage());
@@ -20,8 +23,12 @@ public class WebServer implements Runnable{
 
         new Thread(this).start();
 
-        System.out.println("HTTP server is LIVE on port: " + PORT);
+        System.out.println("HTTP server is LIVE on port: " + port);
 
+        }
+
+    public WebServer (){
+        this(PORT);
         }
 
     /**
@@ -40,6 +47,7 @@ public class WebServer implements Runnable{
 
                     String line = inReader.readLine();
                     String resource = this.getResource(line);
+                    System.out.println(resource + " in run()");
                     String method = this.getMethod(line);
 
                     while((line = inReader.readLine()) != null){
@@ -67,6 +75,7 @@ public class WebServer implements Runnable{
      */
     private String getResource(String line) throws UnsupportedEncodingException {
         String tempRes = line.substring(line.indexOf("/") + 1, line.lastIndexOf("/") - 5);
+        System.out.println(tempRes);
         tempRes = URLDecoder.decode(tempRes, "UTF-8");
         return tempRes;
     }
@@ -81,6 +90,14 @@ public class WebServer implements Runnable{
         return method;
     }
 
+
+    /***
+     * checking for resource to parse
+     * @param resource String
+     * @param method (String)
+     * @param client Socket
+     * @throws IOException
+     */
     private void response(String resource, String method, Socket client) throws IOException{
         String ROOT = this.getClass().getResource("resources/").getFile();
         switch(resource){
@@ -98,5 +115,64 @@ public class WebServer implements Runnable{
                 break;
         }
         closeSocket(client);
+    }
+
+
+
+    /***
+     * Closes Socket
+     * @param client: Socket
+     */
+    private void closeSocket(Socket client) {
+        try {
+            client.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println(client);
+    }
+
+
+    /***
+     *
+     * @param filePath
+     * @param client
+     * @param contentType
+     */
+    private void fileService(String filePath, Socket client, String contentType) throws IOException{
+        PrintStream outStream = new PrintStream(client.getOutputStream(), true);
+        File fileToSend = new File(filePath);
+
+        //Troubleshooting
+        System.out.println(fileToSend.exists() ? fileToSend : "error parsing file");
+
+        if(fileToSend.exists()){
+            outStream.println("HTTP/1.1 200 OK" + "\r\n");
+            outStream.println(contentType + "\r\n");
+            outStream.println("Content-Length: " + fileToSend.length() + "\r\n");
+
+            FileInputStream fileInStream = new FileInputStream(fileToSend);
+            byte[] bytes = new byte[fileInStream.available()];
+            fileInStream.read(bytes);
+            outStream.write(bytes);
+            outStream.close();
+            fileInStream.close();
+
+        }
+        else{
+            String errorMessage = "HTTP/1.1 404 Not Found\r\n" +
+                    "Content-Type: text/html\r\n\r\n" +
+                    "<h1 style=\"font-size: 40px;\"> Error 404</h1>";
+            outStream.write(errorMessage.getBytes(StandardCharsets.UTF_8));
+            outStream.close();
+        }
+
+
+    }
+
+
+    public static void main(String[] args) {
+        new WebServer();
+        new WebServer(8080);
     }
 }
