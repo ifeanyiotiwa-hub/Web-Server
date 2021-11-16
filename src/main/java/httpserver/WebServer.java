@@ -27,8 +27,6 @@ public class WebServer implements Runnable, HttpServerImpl {
 
         webServerThreadOne.start();
 
-//        if(webServerThreadOne.isAlive())
-//            webServerThreadTwo.start();
 
 
         System.out.println("HTTP server is LIVE on port: " + port);
@@ -56,9 +54,7 @@ public class WebServer implements Runnable, HttpServerImpl {
                     String line = inReader.readLine();
                     String method = this.getMethod(line);
                     String resource = this.getResource(line);
-//                    System.out.println(resource + " in run()");
-//
-//                    System.out.println(method + " is running");
+
 
                     while((line = inReader.readLine()) != null){
                         if (line.equals("")) break;
