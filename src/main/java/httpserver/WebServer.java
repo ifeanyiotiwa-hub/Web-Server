@@ -1,14 +1,13 @@
-package httppackage;
-import jdk.jfr.ContentType;
+package httpserver;
+
+import httpserverservice.HttpServerImpl;
 
 import java.io.*;
 import java.net.*;
-import java.nio.charset.StandardCharsets;
-import java.util.StringTokenizer;
 
-public class WebServer implements Runnable{
+public class WebServer implements Runnable, HttpServerImpl {
     private ServerSocket serverSocket;
-    public final static int PORT = 8890;
+    public final static int DEFAULT_PORT = 8890;
 
     public WebServer(int port){
         try{
@@ -20,15 +19,24 @@ public class WebServer implements Runnable{
         if(serverSocket == null){
             System.exit(1);
         }
+        Thread webServerThreadOne = new Thread(this);
+        Thread webServerThreadTwo = new Thread(this);
 
-        new Thread(this).start();
+        webServerThreadTwo.setName("WEB SERVER TWO");
+        webServerThreadOne.setName("WEB SERVER ONE");
+
+        webServerThreadOne.start();
+
+//        if(webServerThreadOne.isAlive())
+//            webServerThreadTwo.start();
+
 
         System.out.println("HTTP server is LIVE on port: " + port);
 
         }
 
     public WebServer (){
-        this(PORT);
+        this(DEFAULT_PORT);
         }
 
     /**
@@ -46,14 +54,17 @@ public class WebServer implements Runnable{
                     BufferedReader inReader = new BufferedReader(inStream);
 
                     String line = inReader.readLine();
-                    String resource = this.getResource(line);
-                    System.out.println(resource + " in run()");
                     String method = this.getMethod(line);
+                    String resource = this.getResource(line);
+//                    System.out.println(resource + " in run()");
+//
+//                    System.out.println(method + " is running");
 
                     while((line = inReader.readLine()) != null){
-                        if (line.equals(" ")) break;
+                        if (line.equals("")) break;
                     }
 
+                    System.out.println(Thread.currentThread().getName() + " is Running");
                     System.out.println("Resource client has requested: " + resource);
                     System.out.println("Type of request: " + method);
                     this.response(resource, method, client);
@@ -73,7 +84,7 @@ public class WebServer implements Runnable{
      * @return UTF encoded HTTP Resource
      * @throws UnsupportedEncodingException
      */
-    private String getResource(String line) throws UnsupportedEncodingException {
+    public String getResource(String line) throws UnsupportedEncodingException {
         String tempRes = line.substring(line.indexOf("/") + 1, line.lastIndexOf("/") - 5);
         System.out.println(tempRes);
         tempRes = URLDecoder.decode(tempRes, "UTF-8");
@@ -85,8 +96,8 @@ public class WebServer implements Runnable{
      * @param line
      * @return
      */
-    private String getMethod(String line) {
-        String method = new StringTokenizer(line).nextElement().toString();
+    public String getMethod(String line) {
+        String method = line.substring(0, line.indexOf(" "));
         return method;
     }
 
@@ -98,21 +109,26 @@ public class WebServer implements Runnable{
      * @param client Socket
      * @throws IOException
      */
-    private void response(String resource, String method, Socket client) throws IOException{
-        String ROOT = this.getClass().getResource("resources/").getFile();
+    public void response(String resource, String method, Socket client) throws IOException{
+        System.out.println(Thread.currentThread().getName() + " is handling " + client);
+        String temp = this.getClass().getResource("../").getFile();
+        System.out.println(temp);
+        String ROOT = temp.substring(0, temp.indexOf("/target/classes")) + "/resources/";
+        System.out.println(ROOT);
         switch(resource){
+            case "":
+            case "/":
             case "index.html":
                 String indexPath = URLDecoder.decode(ROOT + "webroot/index.html", "UTF-8");
                 fileService(indexPath, client, "Content-Type: text/html;charset=UTF-8");
                 break;
             case "json":
                 String jsonPath = URLDecoder.decode(ROOT + "json.json", "UTF-8");
-                fileService(jsonPath, client, "Content-Type: text/json;charset=UTF-8");
+                fileService(jsonPath, client, "Content-Type: application/json;charset=UTF-8");
                 break;
             default:
                 String errorPath = URLDecoder.decode(ROOT + "error.html", "UTF-8");
                 fileService(errorPath, client, "Content-Type: text/html;charset=UTF-8");
-                break;
         }
         closeSocket(client);
     }
@@ -123,7 +139,7 @@ public class WebServer implements Runnable{
      * Closes Socket
      * @param client: Socket
      */
-    private void closeSocket(Socket client) {
+    public void closeSocket(Socket client) {
         try {
             client.close();
         } catch (IOException e) {
@@ -139,17 +155,19 @@ public class WebServer implements Runnable{
      * @param client
      * @param contentType
      */
-    private void fileService(String filePath, Socket client, String contentType) throws IOException{
+    public void fileService(String filePath, Socket client, String contentType) throws IOException{
         PrintStream outStream = new PrintStream(client.getOutputStream(), true);
         File fileToSend = new File(filePath);
 
         //Troubleshooting
-        System.out.println(fileToSend.exists() ? fileToSend : "error parsing file");
+        System.out.println(fileToSend);
+        System.out.println(fileToSend.exists());
 
-        if(fileToSend.exists()){
-            outStream.println("HTTP/1.1 200 OK" + "\r\n");
-            outStream.println(contentType + "\r\n");
-            outStream.println("Content-Length: " + fileToSend.length() + "\r\n");
+        if(fileToSend.exists() && !fileToSend.isDirectory()){
+            outStream.println("HTTP/1.0 200 OK");
+            outStream.println(contentType);
+            outStream.println("Content-Length: " + fileToSend.length());
+            outStream.println();
 
             FileInputStream fileInStream = new FileInputStream(fileToSend);
             byte[] bytes = new byte[fileInStream.available()];
@@ -159,20 +177,12 @@ public class WebServer implements Runnable{
             fileInStream.close();
 
         }
-        else{
+        else {
             String errorMessage = "HTTP/1.1 404 Not Found\r\n" +
-                    "Content-Type: text/html\r\n\r\n" +
+                    "Content-Type: text/html\r\n" + "Content-Length: 23\r\n" + "\r\n" +
                     "<h1 style=\"font-size: 40px;\"> Error 404</h1>";
-            outStream.write(errorMessage.getBytes(StandardCharsets.UTF_8));
+            outStream.write(errorMessage.getBytes());
             outStream.close();
         }
-
-
-    }
-
-
-    public static void main(String[] args) {
-        new WebServer();
-        new WebServer(8080);
     }
 }
