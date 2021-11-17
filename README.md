@@ -9,3 +9,5 @@
 2. '/json' path: This endpoint should handle GET requests to the '/json' path and should return a JSON object recognized by the browser as a JSON object.
 
 **The html page and json object returned should be read from the file system.**
+
+![UML CLASS DIAGRAM](ClassDiagram.png)

@@ -20,9 +20,7 @@ public class WebServer implements Runnable, HttpServerImpl {
             System.exit(1);
         }
         Thread webServerThreadOne = new Thread(this);
-        Thread webServerThreadTwo = new Thread(this);
 
-        webServerThreadTwo.setName("WEB SERVER TWO");
         webServerThreadOne.setName("WEB SERVER ONE");
 
         webServerThreadOne.start();
