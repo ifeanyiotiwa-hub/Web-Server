@@ -1,0 +1,33 @@
+@startuml
+class httpserver.WebServerTest {
+~ int PORT_ONE
+~ int PORT_TWO
+~ void setUp()
+~ void getResource()
+~ void response()
+}
+interface httpserverservice.HttpServerImpl {
+~ void fileService(String,Socket,String)
+~ void closeSocket(Socket)
+~ String getResource(String)
+~ String getMethod(String)
+~ void response(String,String,Socket)
+}
+class httpserver.WebServer {
+- ServerSocket serverSocket
++ {static} int DEFAULT_PORT
++ void run()
++ String getResource(String)
++ String getMethod(String)
++ void response(String,String,Socket)
++ void closeSocket(Socket)
++ void fileService(String,Socket,String)
+}
+class WebServerDemo {
++ {static} void main(String[])
+}
+
+
+httpserver.Runnable <|.. httpserver.WebServer
+httpserverservice.HttpServerImpl <|.. httpserver.WebServer
+@enduml
