@@ -10,4 +10,6 @@
 
 **The html page and json object returned should be read from the file system.**
 
+Below is the uml class diagram for the task
+
 ![UML CLASS DIAGRAM](ClassDiagram.png)
