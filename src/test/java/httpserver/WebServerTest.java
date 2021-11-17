@@ -37,7 +37,6 @@ class WebServerTest {
         assertEquals(expected.substring(0, 10), client.toString().substring(0, 10));
 
         client.close();
-
     }
 
 //    @Disabled
