@@ -1,6 +1,4 @@
-# WEEK-5 TASK
-
-## TASK DESCRIPTION: WEB SERVER
+# WEB SERVER
 
 - Create an http server using raw java socket. The http server would have 2 two or more endpoints which are,
 
